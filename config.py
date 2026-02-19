@@ -77,3 +77,8 @@ STATE_OPTIONS = sorted(
     key=lambda x: x["label"],
 )
 
+
+# county geojson URL for choropleth maps
+COUNTY_GEOJSON_URL = (
+    "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
+)
