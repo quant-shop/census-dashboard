@@ -26,3 +26,21 @@ def fetch_all_states(api_key, variables, year):
     for var in variables:
         df[var] = pd.to_numeric(df[var], errors="coerce")
     return df
+
+
+def fetch_counties(api_key, variables, year, state_fips):
+    """Fetch data for all counties in a state for the specified variables and year."""
+    c = Census(api_key)
+    fields = ["NAME"] + variables
+    data = c.acs5.get(fields, {"for": "county:*", "in": f"state:{state_fips}"})
+    df = pd.DataFrame(data)
+    df['state'] = df['state'].astype(str).str.zfill(2)
+    df['county'] = df['county'].astype(str).str.zfill(3)
+    df['fips'] = df['state'] + df['county']
+    df['county_name'] = df["NAME"].str.replace(r",.*$", "", regex=True)
+
+    for var in variables:
+        df[var] = pd.to_numeric(df[var], errors="coerce")
+    return df
+
+
