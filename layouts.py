@@ -282,3 +282,60 @@ def build_data_table():
         ]),
         className="mb-3",
     )
+
+
+def build_layout():
+    """Assemble the full dashboard layout with navbar, sidebar, charts, and data table."""
+    return dbc.Container(
+        [
+            build_api_key_modal(),
+
+            dcc.Store(id="api-key-store", storage_type="session"),
+            dcc.Store(id="state-data-store"),
+            dcc.Store(id="state-data-start-store"),
+            dcc.Store(id="county-data-store"),
+            dcc.Store(id="county-data-start-store"),
+            dcc.Store(id="current-view-store", data="states"),
+            dcc.Store(id="drilldown-state-store"),
+
+            dbc.Navbar(
+                dbc.Container([
+                    dbc.NavbarBrand(
+                        [html.I(className="fas fa-chart-bar me-2"), "Census Data Explorer"],
+                        className="fw-bold fs-4"
+                    ),
+                    dbc.NavbarToggler(id="navbar-toggler"),
+                    html.Span("US CENSUS BUREAU ACS 5-YEAR ESTIMATES", className="text-light opacity-75 small",
+                    ),
+                ], fluid=True),
+                color="dark",
+                className="mb-4",
+            ),
+
+            dbc.Row(
+                [
+                    dbc.Col(build_sidebar(), lg=3, md=4, className="mb-3"),
+                    dbc.Col(
+                        [
+                            build_map_card(),
+                            build_stats_cards(),
+                            build_charts_row(),
+                            build_secondary_charts_row(),
+                            build_data_table(),
+                        ],
+                        lg=9,
+                        md=8,
+                    ),
+                ],
+                className="g-3"
+            ),
+
+            html.Footer(
+                html.P("Data sourced from the US Census Bureau American Community. ",
+                       className="text-center text-muted small py-3"
+                ),
+            ),
+        ],
+        fluid=True,
+        className="px-4 pb-4",
+    )
