@@ -251,3 +251,34 @@ def build_secondary_charts_row():
         ],
         className="g-3",
     )
+
+
+def build_data_table():
+    """Build a sortable, filterable data table for displaying raw census data."""
+    return dbc.Card(
+        dbc.CardBody([
+            html.H6("Raw Data Table", className="fw-bold mb-3"),
+            dash_table.DataTable(
+                id="data-table",
+                columns=[],
+                data=[],
+                page_size=15,
+                sort_actions="native",
+                filter_action="native",
+                style_table={"overflowX": "auto"},
+                style_header={
+                    "textAlign": "left",
+                    "padding": "8px 12px",
+                    "fontSize": "13px",
+                    "minWidth": "100px",
+                },
+                style_data_conditional=[
+                    {
+                        "if": {"row_index": "odd"},
+                        "backgroundColor": "#f8f9fa",
+                    }
+                ],
+            ),
+        ]),
+        className="mb-3",
+    )
