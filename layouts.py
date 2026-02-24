@@ -190,3 +190,33 @@ def build_stats_cards():
         ],
         className="mb-3 g-3",
     )
+
+def build_charts_row():
+    """Build the row containing the rankings bar chart and distribution histogram."""
+    return dbc.Row(
+        [
+            dbc.Col(
+                dbc.Card(dbc.CardBody([
+                    html.H6("Top / Bottom Rankings", className="fw-bold"),
+                    dcc.Loading(
+                        dcc.Graph(id="bar-chart",style={"height":"380px"}),
+                        type="circle",
+                    ),
+                ])),
+                lg=6,
+                className="mb-3",
+            ),
+            dbc.Col(
+                dbc.Card(dbc.CardBody([
+                    html.H6("Distribution", className="fw-bold"),
+                    dcc.Loading(
+                        dcc.Graph(id="histogram-chart", style={"height": "380px"}),
+                        type="circle",
+                    ),
+                ])),
+                lg=6,
+                className="mb-3",
+            ),
+        ],
+        className="g-3",
+    )
