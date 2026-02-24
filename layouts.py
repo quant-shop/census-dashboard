@@ -220,3 +220,34 @@ def build_charts_row():
         ],
         className="g-3",
     )
+
+
+def build_secondary_charts_row():
+    """Build the row with year-over-year scatter chart and change leaders pie chart."""
+    return dbc.Row(
+        [
+            dbc.Col(
+                dbc.Card(dbc.CardBody([
+                    html.H6("Year-over-Year Comparison", className="fw-bold"),
+                    dcc.Loading(
+                        dcc.Graph(id="scatter-chart", style={"height": "380px"}),
+                        type="circle",
+                    ),
+                ])),
+                lg=6,
+                className="mb-3",
+            ),
+            dbc.Col(
+                dbc.Card(dbc.CardBody([
+                    html.H6("Change Leaders", className="fw-bold"),
+                    dcc.Loading(
+                        dcc.Graph(id="pie-chart", style={"height": "380px"}),
+                        type="circle",
+                    ),
+                ])),
+                lg=6,
+                className="mb-3",
+            ),
+        ],
+        className="g-3",
+    )
