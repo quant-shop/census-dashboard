@@ -107,3 +107,63 @@ def build_sidebar():
         ]),
         className="sidebar-card h-100",
     )
+
+
+def build_map_card():
+    """Build the interactive choropleth map card with variable and year toggle controls."""
+    return dbc.Card(
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col(
+                    html.H5("Interactive Map", className="fw-bold mb-0 pt-1"),
+                    width="auto",
+                ),
+                dbc.Col(
+                    dcc.Dropdown(
+                        id="map-variable-dropdown",
+                        options=[],
+                        value=None,
+                        clearable=False,
+                        placeholder="Select variable to map...",
+                        style={"minWidth": "280px"},
+                    ),
+                    width="auto",
+                ),
+                dbc.Col(
+                    dcc.RadioItems(
+                        id="map-year-toggle",
+                        options=[
+                            {"label": "Start Year", "value": "start"},
+                            {"label": "End Year", "value": "end"},
+                            {"label": "% Change", "value": "change"},
+                        ],
+                        value="end",
+                        inline=True,
+                        className="small",
+                        inputClassName="me-1",
+                        labelClassName="me-3",
+                    ),
+                    width="auto",
+                ),
+                dbc.Col(
+                    dbc.Button(
+                        "Back to US Map",
+                        id="back-button",
+                        color="secondary",
+                        size="sm",
+                        style={"display": "none"},
+                    ),
+                    width="auto",
+                ),
+            ], align="center", className="mb-2 g-2", justify="start"),
+            dcc.Loading(
+                dcc.Graph(
+                    id="map-figure",
+                    config={"displayModeBar": True, "scrollZoom": True},
+                    style={"height": "520px"},
+                ),
+                type="circle",
+            ),
+        ]),
+        className="mb-3",
+    )
