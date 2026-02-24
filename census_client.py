@@ -44,3 +44,23 @@ def fetch_counties(api_key, variables, year, state_fips):
     return df
 
 
+def get_variable_label(code):
+    """Get the label for a given variable code."""
+    return CENSUS_VARIABLES.get(code, {}).get("label", code)
+
+def get_variable_format(code):
+    """Get the format for a given variable code."""
+    return CENSUS_VARIABLES.get(code, {}).get("format", ",")
+
+
+def format_value(value, code):
+    """Format a value based on the variable's specified format."""
+    fmt = get_variable_format(code)
+    if pd.isna(value):
+        return "N/A"
+    try:
+        if fmt.startswith("$"):
+            return f"${value:{fmt[1:]}}"
+        return f"{value:{fmt}}"
+    except (ValueError, TypeError):
+            return str(value)
