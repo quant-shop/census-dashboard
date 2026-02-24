@@ -167,3 +167,26 @@ def build_map_card():
         ]),
         className="mb-3",
     )
+
+
+def build_stats_cards():
+    """Build the cards that will display key statistics and comparisons."""
+    return dbc.Row(
+        [
+            dbc.Col(dbc.Card(dbc.CardBody([
+                html.P("Regions", className="text-muted small mb-1"),
+                html.H4(id="stat-count", children="--", className="fw-bold mb-0"),
+            ])), md=3),
+
+            dbc.Col(dbc.Card(dbc.CardBody([
+                html.P("Mean", className="text-muted small mb-1"),
+                html.H4(id="stat-mean", children="--", className="fw-bold mb-0"),
+            ])), md=3),
+
+            dbc.Col(dbc.Card(dbc.CardBody([
+                html.P("Std Dev", className="text-muted small mb-1"),
+                html.H4(id="stat-std", children="--", className="fw-bold mb-0"),
+            ])), md=3), 
+        ],
+        className="mb-3 g-3",
+    )
