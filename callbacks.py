@@ -63,4 +63,15 @@ def register_callbacks(app):
             return api_key, False, False
         return no_update, True, True
 
+    # --- YEAR RANGE LABEL ------------------
+    @app.callback(
+        Output("year-range-label", "children"),
+        Input("year-range-slider", "value"),
+    )
+    def update_year_label(year_range):
+        """Update the year range comparison label when the slider changes."""
+        if not year_range or len(year_range) < 2:
+            return ""
+        return f"Comparing {year_range[0]} vs {year_range[1]}"
+
     
