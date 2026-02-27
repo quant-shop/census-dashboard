@@ -43,62 +43,6 @@ def _empty_map(message="Select variable and click 'Fetch Data'"):
     return fig
 
 
-def _build_map_for_toggle(
-    state_end_json, state_start_json, county_end_json, county_start_json,
-    map_var, label, year_toggle, start_year, end_year, view, state_fips,
-):
-    """Build a choropleth map for the given view and year toggle selection."""
-    if view == "county" and county_end_json:
-        end_df = pd.read_json(county_end_json, orient="split")
-        start_df = pd.read_json(county_start_json, orient="split") if county_start_json else end_df
-        location_col, name_col = "fips", "county_name"
-    else:
-        end_df = pd.read_json(state_end_json, orient="split")
-        start_df = pd.read_json(state_start_json, orient="split") if state_start_json else end_df
-        location_col, name_col = "state_abbrev", "state_name"
-
-    if year_toggle == "start":
-        df, title_year = start_df, str(start_year)
-    elif year_toggle == "change":
-        df = end_df.copy()
-        merged = end_df[[location_col, map_var]].merge(
-            start_df[[location_col, map_var]],
-            on=location_col, suffixes=("_end", "_start"),
-        )
-        merged["change"] = (
-            (merged[f"{map_var}_end"] - merged[f"{map_var}_start"])
-            / merged[f"{map_var}_start"].replace(0, float("nan"))
-            * 100
-        )
-        df = df.merge(merged[[location_col, "change"]], on=location_col, how="left")
-        map_var, label, title_year = "change", f"% Change in {label}", f"{start_year}-{end_year}"
-    else:
-        df, title_year = end_df, str(end_year)
-
-    if view == "county" and county_end_json:
-        geojson = _get_county_geojson()
-        fig = px.choropleth(
-            df, geojson=geojson, locations=location_col, color=map_var,
-            hover_name=name_col, color_continuous_scale="Viridis",
-            scope="usa", title=f"{label} — {title_year}",
-        )
-    else:
-        fig = px.choropleth(
-            df, locations=location_col, locationmode="USA-states",
-            color=map_var, hover_name=name_col,
-            color_continuous_scale="Viridis",
-            scope="usa", title=f"{label} — {title_year}",
-        )
-
-    fig.update_layout(
-        margin=dict(l=0, r=0, t=40, b=0),
-        geo=dict(bgcolor="rgba(0,0,0,0)"),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-    )
-    return fig
-
-
 def register_callbacks(app):
     """Register all Dash callbacks for the census dashboard."""
 
@@ -323,4 +267,62 @@ def register_callbacks(app):
             format_value(series.std(), map_var),
         )
 
-        
+
+    # --- BAR CHART -------------------------
+    @app.callback(
+        Output("bar-chart", "figure"),
+        Input("state-data-store", "data"),
+        Input("county-data-store", "data"),
+        Input("current-view-store", "data"),
+        Input("map-variable-dropdown", "value"),
+        prevent_initial_call=True,
+    )
+    def update_bar_chart(state_json, county_json, view, map_var):
+        """Render a horizontal bar chart showing top/bottom 10 regions."""
+        if not map_var:
+            return _empty_map()
+
+        df, name_col = _get_active_df(state_json, county_json, view)
+        if df is None or map_var not in df.columns:
+            return _empty_map()
+
+        label = get_variable_label(map_var)
+        df_sorted = df.dropna(subset=[map_var]).sort_values(by=map_var, ascending=False)
+
+        top = df_sorted.head(10)
+        bottom = df_sorted.tail(10)
+        combined = pd.concat([top, bottom]).drop_duplicates()
+        combined = combined.sort_values(by=map_var, ascending=True)
+
+        colors = [
+            "#e74c3c" if val < combined[map_var].median() else "#2ecc71"
+            for val in combined[map_var]
+        ]
+        fig = go.Figure(go.Bar(
+            y=combined[name_col], x=combined[map_var],
+            orientation="h",
+            marker_color=colors,
+            hovertemplate=f"<b>%{{y}}</b><br>{label}: %{{x:,.0f}}<extra></extra>",
+        ))
+        fig.update_layout(
+            margin=dict(l=10, r=10, t=10, b=10),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis_title=label,
+            yaxis=dict(autorange=True),
+            height=380,
+        )
+        return fig
+
+# -- HELPER FUNCTIONS -------------------------
+def _get_active_df(state_json, county_json, view):
+    """Return the active DataFrame and its name column based on current view."""
+    if view == "county" and county_json:
+        df = pd.read_json(county_json, orient="split")
+        name_col = "county_name" if "county_name" in df.columns else "NAME"
+        return df, name_col
+    elif state_json:
+        df = pd.read_json(state_json, orient="split")
+        name_col = "state_name" if "state_name" in df.columns else "NAME"
+        return df, name_col
+    return None, None
