@@ -21,5 +21,24 @@ def _get_county_geojson():
     return _county_geojson_cache
 
 
+def _empty_map(message="Select variable and click 'Fetch Data'"):
+    """Return a blank US map with a centered placeholder message."""
+    fig = go.Figure()
+    fig.update_layout(
+        geo=dict(scope="usa", bgcolor="rgba(0,0,0,0)"),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=0, r=0, t=30, b=0),
+        annotations=[
+            dict(
+                text=message,
+                xref="paper", yref="paper",
+                x=0.6, y=0.5,
+                showarrow=False,
+                font=dict(size=16, color="#888"),
+            )
+        ],
+    )
 
+    return fig
     
