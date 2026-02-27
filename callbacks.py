@@ -389,7 +389,7 @@ def _build_map_for_toggle(
     return _build_state_choropleth(df, map_var, label + suffix)
 
 
-def _build_change_choropleth(df_end, df_start, map_var, label, is_county, state_fips):
+def _build_change_choropleth(df_end, df_start, var_code, label, is_county, state_fips):
     """Build a choropleth showing percent change between start and end year."""
     if is_county:
         merge_on = "fips"
