@@ -43,6 +43,62 @@ def _empty_map(message="Select variable and click 'Fetch Data'"):
     return fig
 
 
+def _build_map_for_toggle(
+    state_end_json, state_start_json, county_end_json, county_start_json,
+    map_var, label, year_toggle, start_year, end_year, view, state_fips,
+):
+    """Build a choropleth map for the given view and year toggle selection."""
+    if view == "county" and county_end_json:
+        end_df = pd.read_json(county_end_json, orient="split")
+        start_df = pd.read_json(county_start_json, orient="split") if county_start_json else end_df
+        location_col, name_col = "fips", "county_name"
+    else:
+        end_df = pd.read_json(state_end_json, orient="split")
+        start_df = pd.read_json(state_start_json, orient="split") if state_start_json else end_df
+        location_col, name_col = "state_abbrev", "state_name"
+
+    if year_toggle == "start":
+        df, title_year = start_df, str(start_year)
+    elif year_toggle == "change":
+        df = end_df.copy()
+        merged = end_df[[location_col, map_var]].merge(
+            start_df[[location_col, map_var]],
+            on=location_col, suffixes=("_end", "_start"),
+        )
+        merged["change"] = (
+            (merged[f"{map_var}_end"] - merged[f"{map_var}_start"])
+            / merged[f"{map_var}_start"].replace(0, float("nan"))
+            * 100
+        )
+        df = df.merge(merged[[location_col, "change"]], on=location_col, how="left")
+        map_var, label, title_year = "change", f"% Change in {label}", f"{start_year}-{end_year}"
+    else:
+        df, title_year = end_df, str(end_year)
+
+    if view == "county" and county_end_json:
+        geojson = _get_county_geojson()
+        fig = px.choropleth(
+            df, geojson=geojson, locations=location_col, color=map_var,
+            hover_name=name_col, color_continuous_scale="Viridis",
+            scope="usa", title=f"{label} — {title_year}",
+        )
+    else:
+        fig = px.choropleth(
+            df, locations=location_col, locationmode="USA-states",
+            color=map_var, hover_name=name_col,
+            color_continuous_scale="Viridis",
+            scope="usa", title=f"{label} — {title_year}",
+        )
+
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=40, b=0),
+        geo=dict(bgcolor="rgba(0,0,0,0)"),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
+    return fig
+
+
 def register_callbacks(app):
     """Register all Dash callbacks for the census dashboard."""
 
@@ -149,5 +205,88 @@ def register_callbacks(app):
                 f"Error fetching data: {e}",
                 no_update, no_update,
             )
+
+    # --- MAP DRILL-DOWN -------------------------
+    @app.callback(
+        Output("map-figure", "figure"),
+        Output("back-button", "style"),
+        Output("county-data-store", "data", allow_duplicate=True),
+        Output("county-data-start-store", "data", allow_duplicate=True),
+        Output("current-view-store", "data", allow_duplicate=True),
+        Output("drilldown-state-store", "data", allow_duplicate=True),
+        Output("status-text", "children", allow_duplicate=True),
+        Input("map-figure", "clickData"),
+        Input("back-button", "n_clicks"),
+        Input("state-data-store", "data"),
+        Input("map-variable-dropdown", "value"),
+        Input("map-year-toggle", "value"),
+        State("state-data-start-store", "data"),
+        State("county-data-store", "data"),
+        State("county-data-start-store", "data"),
+        State("current-view-store", "data"),
+        State("drilldown-state-store", "data"),
+        State("api-key-store", "data"),
+        State("year-range-slider", "value"),
+        State("variable-dropdown", "value"),
+        prevent_initial_call=True,
+    )
+    def update_map(
+        click_data, back_clicks, state_end_json, map_var, year_toggle,
+        state_start_json, county_end_json, county_start_json,
+        current_view, drilldown_state, api_key, year_range, variables,
+    ):
+        """Handle map clicks for state-to-county drill-down and back navigation."""
+        triggered = ctx.triggered_id
+        hide_back = {"display": "none"}
+        show_back = {"display": "inline-block"}
+        no_county = (no_update, no_update)
+
+        if not state_end_json or not map_var:
+            return (_empty_map(), hide_back, *no_county,
+            no_update, no_update, no_update)
+
+        start_year, end_year = year_range
+        label = get_variable_label(map_var)
+
+        # back button 
+        if triggered == "back-button":
+            fig = _build_map_for_toggle(
+                state_end_json, state_start_json, None, None,
+                map_var, label, year_toggle, start_year, end_year,
+                "states", None,
+            )
+            return (fig, hide_back, None, None, "states", None,
+            "Showing all states.")
+
+        # click on map 
+        if triggered == "map-figure" and click_data and current_view == "states":
+            try:
+                point = click_data["points"][0]
+                clicked_location = point.get("location", "")
+                clicked_fips = None
+                for fips, abbrev in FIPS_TO_ABBREV.items():
+                    if abbrev == clicked_location:
+                        clicked_fips = fips
+                        break
+
+                if clicked_fips and api_key:
+                    if isinstance(variables, str):
+                        variables = [variables]
+                    county_end_df = fetch_counties(api_key, variables, end_year, clicked_fips)
+                    county_start_df = fetch_counties(api_key, variables, start_year, clicked_fips)
+                    c_end_j = county_end_df.to_json(orient="split")
+                    c_start_j = county_start_df.to_json(orient="split")
+                    state_name = STATE_FIPS.get(clicked_fips, clicked_fips)
+
+                    fig = _build_map_for_toggle(
+                        state_end_json, state_start_json, c_end_j, c_start_j,
+                        map_var, label, year_toggle, start_year, end_year, "county", clicked_fips,
+                    )
+                    status = f"Showing {len(county_end_df)} counties in {state_name}."
+
+                    return (fig, show_back, c_end_j, c_start_j, "county", clicked_fips, status)
+            except (KeyError, IndexError):
+                pass
+
 
         
