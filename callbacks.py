@@ -287,6 +287,40 @@ def register_callbacks(app):
                     return (fig, show_back, c_end_j, c_start_j, "county", clicked_fips, status)
             except (KeyError, IndexError):
                 pass
+    
+    # --- STATS CARDS -------------------------
+    @app.callback(
+        Output("stat-count", "children"),
+        Output("stat-mean", "children"),
+        Output("stat-std", "children"),
+        Input("state-data-store", "data"),
+        Input("county-data-store", "data"),
+        Input("current-view-store", "data"),
+        Input("map-variable-dropdown", "value"),
+        prevent_initial_call=True,
+    )
+    def update_stats(state_json, county_json, view, map_var):
+        """Update the summary stat cards (count, mean, std dev) for the active view."""
+        if not map_var:
+            return "--", "--", "--"
 
+        df = None
+        if view == "county" and county_json:
+            df = pd.read_json(county_json, orient="split")
+        elif state_json:
+            df = pd.read_json(state_json, orient="split")
+
+        if df is None or map_var not in df.columns:
+            return "--", "--", "--"
+
+        series = df[map_var].dropna()
+        if series.empty:
+            return "0", "--", "--"
+
+        return (
+            f"{len(series):,}",
+            format_value(series.mean(), map_var),
+            format_value(series.std(), map_var),
+        )
 
         
