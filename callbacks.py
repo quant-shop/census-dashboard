@@ -335,6 +335,48 @@ def register_callbacks(app):
         )
         return fig
 
+
+    # --- HISTOGRAM -------------------------
+    @app.callback(
+        Output("histogram-chart", "figure"),
+        Input("state-data-store", "data"),
+        Input("county-data-store", "data"),
+        Input("current-view-store", "data"),
+        Input("map-variable-dropdown", "value"),
+        prevent_initial_call=True,
+    )
+    def update_histogram(state_json, county_json, view, map_var):
+        """Render a histogram showing the distribution of the selected variable."""
+        if not map_var:
+            return _empty_chart()
+
+        df, _ = _get_active_df(state_json, county_json, view)
+        if df is None or map_var not in df.columns:
+            return _empty_chart()
+        label = get_variable_label(map_var)
+        series = df[map_var].dropna()
+
+        fig = px.histogram(
+            series, nbins=25,
+            labels={"value": label, "count": "Frequency"},
+            color_discrete_sequence=["#3498db"],
+        )
+
+        fig.update_layout(
+            margin=dict(l=10, r=10, t=10, b=10),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            showlegend=False,
+            xaxis_title=label,
+            yaxis_title="Count",
+            height=380,
+        )
+
+        return fig
+        
+
+
+
 # -- HELPER FUNCTIONS -------------------------
 def _get_active_df(state_json, county_json, view):
     """Return the active DataFrame and its name column based on current view."""
