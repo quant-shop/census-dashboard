@@ -42,6 +42,27 @@ def _empty_map(message="Select variable and click 'Fetch Data'"):
 
     return fig
 
+def _empty_chart(message="No data available"):
+    """Return a blank chart with a centered placeholder message."""
+    fig = go.Figure()
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=20, r=20, t=20, b=20),
+        annotations=[
+            dict(
+                text=message,
+                xref="paper", yref="paper",
+                x=0.5, y=0.5, 
+                showarrow=False, 
+                font=dict(size=14, color="#888"),
+            )
+        ],
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+    )
+    return fig
+
 
 def register_callbacks(app):
     """Register all Dash callbacks for the census dashboard."""
