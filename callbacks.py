@@ -326,3 +326,192 @@ def _get_active_df(state_json, county_json, view):
         name_col = "state_name" if "state_name" in df.columns else "NAME"
         return df, name_col
     return None, None
+
+
+def _build_map_for_toggle(
+    state_end_json, state_start_json, county_end_json, county_start_json,
+    map_var, label, year_toggle, start_year, end_year, current_view, drilldown_state,
+):
+    """Build a choropleth map for the selected year range and view."""
+    is_county = current_view == "county" and county_end_json
+
+    if year_toggle == "change":
+        if is_county:
+            df_end = pd.read_json(county_end_json, orient="split")
+            df_start = pd.read_json(county_start_json, orient="split") if county_start_json else None
+        else:
+            df_end = pd.read_json(state_end_json, orient="split")
+            df_start = pd.read_json(state_start_json, orient="split") if state_start_json else None
+        
+        if df_start is None:
+            return _empty_map("Start-year data not available.")
+
+        change_label = f"% Change in {label} ({start_year}-{end_year})"
+        return _build_change_choropleth(
+            df_end, df_start, map_var, change_label, is_county, drilldown_state
+        )
+    
+    if year_toggle == "start":
+        chosen_json = county_start_json if is_county else state_start_json
+        suffix = f" ({start_year})"
+    else:
+        chosen_json = county_end_json if is_county else state_end_json
+        suffix = f" ({end_year})"
+
+    if not chosen_json:
+        return _empty_map("No data for selected year.")
+
+    df = pd.read_json(chosen_json, orient="split")
+
+    if is_county:
+        return _build_county_choropleth(df, map_var, label + suffix, drilldown_state)
+    return _build_state_choropleth(df, map_var, label + suffix)
+
+
+def _build_change_choropleth(df_end, df_start, map_var, label, is_county, state_fips):
+    """Build a choropleth showing percent change between start and end year."""
+    if is_county:
+        merge_on = "fips"
+        name_col = "county_name"
+        loc_col = "fips"
+    else:
+        merge_on = "state"
+        name_col = "state_name"
+        loc_col = "state_abbrev"
+
+    merged = df_end.merge(
+        df_start[[merge_on, var_code]],
+        on=merge_on, suffixes=("_end", "_start"),
+    )
+
+    end_col = f"{var_code}_end"
+    start_col = f"{var_code}_start"
+    merged["pct_change"] = (
+        (merged[end_col] - merged[start_col]) / merged[start_col].replace(0, float("nan"))
+    ) * 100
+
+    if is_county:
+        geojson = _get_county_geojson()
+        filtered = [
+            f for f in geojson["features"]
+            if f["properties"]["STATE"] == state_fips
+        ]
+        filtered_geojson = {"type": "FeatureCollection", "features": filtered}
+        fig = px.choropleth(
+            merged, geojson=filtered_geojson,
+            locations=loc_col, featureidkey="id",
+            color="pct_change",
+            hover_name=name_col,
+            hover_data={"pct_change": ":.1f", loc_col: False},
+            color_continuous_scale="RdYlGn",
+            color_continuous_midpoint=0,
+            labels={"pct_change": label},
+        )
+        fig.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
+    else:
+        fig = px.choropleth(
+            merged,
+            locations=loc_col, locationmode="USA-states",
+            color="pct_change",
+            hover_name=name_col,
+            hover_data={"pct_change": ":.1f", loc_col: False},
+            color_continuous_scale="RdYlGn",
+            color_continuous_midpoint=0,
+            labels={"pct_change": label},
+            scope="usa",
+        )
+
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        geo=dict(bgcolor="rgba(0,0,0,0)", lakecolor="rgba(0,0,0,0)"),
+        coloraxis_colorbar=dict(
+            title=dict(text=label, font=dict(size=10)),
+            thickness=15, len=0.6,
+        ),
+    )
+
+    fig.update_traces(
+        hovertemplate="<b>%{hovertext}</b><br>" + label + ": %{z:.1f}%<extra></extra>"
+    )
+
+    return fig
+
+
+def _build_state_choropleth(df, var_code, label):
+    """Build a state-level choropleth map for a single variable."""
+    fig = px.choropleth(
+        df,
+        locations="state_abbrev",
+        locationmode="USA-states",
+        color=var_code,
+        hover_name="state_name",
+        hover_data={var_code: ":,.0f", "state_abbrev": False},
+        color_continuous_scale="Viridis",
+        labels={var_code: label},
+        scope="usa",
+    )
+
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        geo=dict(bgcolor="rgba(0,0,0,0)", lakecolor="rgba(0,0,0,0)"),
+        coloraxis_colorbar=dict(
+            title=dict(text=label, font=dict(size=11)),
+            thickness=15,
+            len=0.6,
+        ),
+    )
+
+    fig.update_traces(
+        hovertemplate="<b>%{hovertext}</b><br>" + label + ": %{z:,.0f}<extra></extra>"
+    )
+
+    return fig
+
+
+def _build_county_choropleth(df, var_code, label, state_fips):
+    """Build a county-level choropleth map filtered to a single state."""
+    geojson = _get_county_geojson()
+
+    filtered_features = [
+        f for f in geojson["features"]
+        if f["properties"]["STATE"] == state_fips
+    ]
+    filtered_geojson = {"type": "FeatureCollection", "features": filtered_features}
+
+    fig = px.choropleth(
+        df,
+        geojson=filtered_geojson,
+        locations="fips",
+        featureidkey="id",
+        color=var_code,
+        hover_name="county_name",
+        hover_data={var_code: ":,.0f", "fips": False},
+        color_continuous_scale="Plasma",
+    )
+
+    fig.update_geos(
+        fitbounds="locations",
+        visible=False,
+        bgcolor="rgba(0,0,0,0)",
+    )
+
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        coloraxis_colorbar=dict(
+            title=dict(text=label, font=dict(size=11)),
+            thickness=15,
+            len=0.6,
+        ),
+    )
+
+    fig.update_traces(
+        hovertemplate="<b>%{hovertext}</b><br>" + label + ": %{z:,.0f}<extra></extra>"
+    )
+
+    return fig
