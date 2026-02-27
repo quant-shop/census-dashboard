@@ -41,4 +41,26 @@ def _empty_map(message="Select variable and click 'Fetch Data'"):
     )
 
     return fig
+
+
+def register_callbacks(app):
+    """Register all Dash callbacks for the census dashboard."""
+
+    # --- API KEY VALIDATION ------------------
+    @app.callback(
+        Output("api-key-store", "data"),
+        Output("api-key-modal", "is_open"),
+        Output("api-key-error", "is_open"),
+        Input("api-key-submit", "n_clicks"),
+        State("api-key-input", "value"),
+        prevent_initial_call=True,
+    )
+    def handle_api_key(n_clicks, api_key):
+        if not api_key or not api_key.strip():
+            return no_update, True, True
+        api_key = api_key.strip()
+        if validate_api_key(api_key):
+            return api_key, False, False
+        return no_update, True, True
+
     
