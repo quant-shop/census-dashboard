@@ -1,9 +1,10 @@
 from io import StringIO
+import re
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import requests
-from dash import Input, Output, State, ctx, no_update, dcc
+from dash import Input, Output, State, ctx, no_update, dcc, html
 
 from census_client import *
 from config import *
@@ -90,6 +91,55 @@ def register_callbacks(app):
         if validate_api_key(api_key):
             return api_key, False, False
         return no_update, True, True
+
+    # --- ADD CUSTOM VARIABLE ------------------
+    @app.callback(
+        Output("variable-dropdown", "options"),
+        Output("variable-dropdown", "value"),
+        Output("custom-var-input", "value"),
+        Output("custom-var-feedback", "children"),
+        Input("add-custom-var-button", "n_clicks"),
+        State("custom-var-input", "value"),
+        State("variable-dropdown", "options"),
+        State("variable-dropdown", "value"),
+        prevent_initial_call=True,
+    )
+    def add_custom_variable(n_clicks, raw_code, current_options, current_values):
+        """Validate and append a user-entered Census variable code to the dropdown."""
+        if not raw_code or not raw_code.strip():
+            return no_update, no_update, no_update, ""
+
+        code = raw_code.strip().upper()
+
+        if not re.match(r"^[A-Z]\d{5}[A-Z]?_\d{3}[A-Z]$", code):
+            return no_update, no_update, no_update, html.Span(
+                f"Invalid format: '{raw_code}'. Expected e.g. B19013_001E",
+                className="text-danger",
+            )
+
+        existing_values = [o["value"] for o in current_options if not o.get("disabled")]
+        if code in existing_values:
+            values = current_values or []
+            if code not in values:
+                values = values + [code]
+            return no_update, values, "", html.Span(
+                f"'{code}' already available — selected.",
+                className="text-info",
+            )
+
+        label = CENSUS_VARIABLES.get(code, {}).get("label", code)
+        new_option = {"label": f"{label} ({code})", "value": code}
+        updated_options = current_options + [
+            {"label": "Custom", "value": "_header_Custom", "disabled": True},
+            new_option,
+        ] if not any(o.get("value") == "_header_Custom" for o in current_options) else current_options + [new_option]
+
+        values = (current_values or []) + [code]
+
+        return updated_options, values, "", html.Span(
+            f"Added '{code}' successfully.",
+            className="text-success",
+        )
 
     # --- YEAR RANGE LABEL ------------------
     @app.callback(

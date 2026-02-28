@@ -1,13 +1,49 @@
 CENSUS_VARIABLES = {
-    # demographics
+    # Demographics
     "B01001_001E": {"label": "Total Population", "category": "Demographics", "format": ","},
     "B01002_001E": {"label": "Median Age", "category": "Demographics", "format": ".1f"},
-    "B03002_001E": {"label": "Total Population (Race/Ethnicity)", "category": "Demographics", "format": ","},
-    "B03002_003E": {"label": "White Alone, Not Hispanic", "category": "Demographics", "format": ","},
-    "B03002_004E": {"label": "Black or African American Alone", "category": "Demographics", "format": ","},
-    "B03002_012E": {"label": "Hispanic or Latino", "category": "Demographics", "format": ","},
+    "B14001_001E": {"label": "Population 3+ Enrolled in School", "category": "Demographics", "format": ","},
 
-    # we will add more variables later
+    # Race / Ethnicity
+    "B03002_001E": {"label": "Total Population (Race/Ethnicity)", "category": "Race / Ethnicity", "format": ","},
+    "B03002_003E": {"label": "White Alone, Not Hispanic", "category": "Race / Ethnicity", "format": ","},
+    "B03002_004E": {"label": "Black or African American Alone", "category": "Race / Ethnicity", "format": ","},
+    "B03002_012E": {"label": "Hispanic or Latino", "category": "Race / Ethnicity", "format": ","},
+
+    # Income / Poverty
+    "B19013_001E": {"label": "Median Household Income", "category": "Income / Poverty", "format": "$,"},
+    "B19083_001E": {"label": "Gini Index of Income Inequality", "category": "Income / Poverty", "format": ".4f"},
+    "B17001_001E": {"label": "Total Population for Poverty Status", "category": "Income / Poverty", "format": ","},
+    "B17001_002E": {"label": "Population Below Poverty Level", "category": "Income / Poverty", "format": ","},
+    "B17001B_001E": {"label": "Total Black Population for Poverty Status", "category": "Income / Poverty", "format": ","},
+    "B17001B_002E": {"label": "Black Population Below Poverty Level", "category": "Income / Poverty", "format": ","},
+
+    # Education
+    "B15003_001E": {"label": "Total Population 25 Years and Over", "category": "Education", "format": ","},
+    "B15003_022E": {"label": "Bachelor's Degree", "category": "Education", "format": ","},
+    "B15003_023E": {"label": "Master's Degree", "category": "Education", "format": ","},
+    "B15003_024E": {"label": "Professional School Degree", "category": "Education", "format": ","},
+    "B15003_025E": {"label": "Doctorate Degree", "category": "Education", "format": ","},
+
+    # Employment
+    "B23025_001E": {"label": "Population 16 Years and Over", "category": "Employment", "format": ","},
+    "B23025_003E": {"label": "Civilian Labor Force", "category": "Employment", "format": ","},
+    "B23025_005E": {"label": "Unemployed", "category": "Employment", "format": ","},
+
+    # Housing
+    "B25003_001E": {"label": "Total Occupied Housing Units", "category": "Housing", "format": ","},
+    "B25003_002E": {"label": "Owner-Occupied Housing Units", "category": "Housing", "format": ","},
+    "B25003_003E": {"label": "Renter-Occupied Housing Units", "category": "Housing", "format": ","},
+    "B25064_001E": {"label": "Median Gross Rent", "category": "Housing", "format": "$,"},
+    "B25077_001E": {"label": "Median Home Value", "category": "Housing", "format": "$,"},
+
+    # Rent Burden
+    "B25070_010E": {"label": "Gross Rent 30-34.9% of Income", "category": "Rent Burden", "format": ","},
+    "B25070_011E": {"label": "Gross Rent 35-39.9% of Income", "category": "Rent Burden", "format": ","},
+    "B25070_012E": {"label": "Gross Rent 40-49.9% of Income", "category": "Rent Burden", "format": ","},
+    "B25070_013E": {"label": "Gross Rent 50%+ of Income", "category": "Rent Burden", "format": ","},
+    "B25070_014E": {"label": "Rent Not Computed", "category": "Rent Burden", "format": ","},
+    "B25070_015E": {"label": "No Cash Rent", "category": "Rent Burden", "format": ","},
 }
 
 VARIABLE_CODES = list(CENSUS_VARIABLES.keys())

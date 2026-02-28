@@ -90,7 +90,28 @@ def build_sidebar():
                 value=DEFAULT_VARIABLES,
                 multi=True,
                 placeholder="Select variables...",
-                className="mb-3",
+                className="mb-2",
+            ),
+
+            dbc.Label("Add Custom Variable", className="fw-semibold small mt-1"),
+            dbc.InputGroup([
+                dbc.Input(
+                    id="custom-var-input",
+                    type="text",
+                    placeholder="e.g. B19013_001E",
+                    size="sm",
+                ),
+                dbc.Button(
+                    "Add",
+                    id="add-custom-var-button",
+                    color="outline-secondary",
+                    size="sm",
+                    n_clicks=0,
+                ),
+            ], size="sm", className="mb-1"),
+            html.Div(
+                id="custom-var-feedback",
+                className="small mb-3",
             ),
 
             dbc.Button(
