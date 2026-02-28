@@ -257,7 +257,7 @@ def register_callbacks(app):
         fig = _build_map_for_toggle(
             state_end_json, state_start_json,
             county_end_json, county_start_json,
-            map_var, label, year_toggle
+            map_var, label, year_toggle,
             start_year, end_year,
             current_view, drilldown_state,
         )
