@@ -254,10 +254,26 @@ def build_secondary_charts_row():
 
 
 def build_data_table():
-    """Build a sortable, filterable data table for displaying raw census data."""
+    """Build a sortable, filterable data table with CSV export button."""
     return dbc.Card(
         dbc.CardBody([
-            html.H6("Raw Data Table", className="fw-bold mb-3"),
+            dbc.Row([
+                dbc.Col(
+                    html.H6("Raw Data Table", className="fw-bold mb-0 pt-1"),
+                    width="auto",
+                ),
+                dbc.Col(
+                    dbc.Button(
+                        [html.I(className="fas fa-file-csv me-2"), "Export CSV"],
+                        id="export-csv-button",
+                        color="outline-primary",
+                        size="sm",
+                    ),
+                    width="auto",
+                    className="ms-auto",
+                ),
+            ], align="center", className="mb-3"),
+            dcc.Download(id="download-csv"),
             dash_table.DataTable(
                 id="data-table",
                 columns=[],
@@ -267,16 +283,37 @@ def build_data_table():
                 filter_action="native",
                 style_table={"overflowX": "auto"},
                 style_header={
+                    "backgroundColor": "#f1f3f5",
+                    "fontWeight": "600",
                     "textAlign": "left",
-                    "padding": "8px 12px",
+                    "padding": "10px 14px",
                     "fontSize": "13px",
-                    "minWidth": "100px",
+                    "minWidth": "120px",
+                    "borderBottom": "2px solid #dee2e6",
+                },
+                style_cell={
+                    "textAlign": "left",
+                    "padding": "8px 14px",
+                    "fontSize": "13px",
+                    "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    "minWidth": "120px",
+                    "maxWidth": "300px",
+                    "overflow": "hidden",
+                    "textOverflow": "ellipsis",
+                },
+                style_data={
+                    "borderBottom": "1px solid #eee",
                 },
                 style_data_conditional=[
                     {
                         "if": {"row_index": "odd"},
                         "backgroundColor": "#f8f9fa",
-                    }
+                    },
+                    {
+                        "if": {"state": "active"},
+                        "backgroundColor": "#e8f4fd",
+                        "border": "1px solid #3498db",
+                    },
                 ],
             ),
         ]),

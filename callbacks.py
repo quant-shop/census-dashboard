@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import requests
-from dash import Input, Output, State, ctx, no_update
+from dash import Input, Output, State, ctx, no_update, dcc
 
 from census_client import *
 from config import *
@@ -549,6 +549,21 @@ def register_callbacks(app):
         columns = [{"name": c, "id": c} for c in display_df.columns]
         data = display_df.to_dict("records")
         return columns, data
+
+    # --- CSV EXPORT -------------------------
+    @app.callback(
+        Output("download-csv", "data"),
+        Input("export-csv-button", "n_clicks"),
+        State("data-table", "data"),
+        State("data-table", "columns"),
+        prevent_initial_call=True,
+    )
+    def export_csv(n_clicks, data, columns):
+        """Export the current data table contents as a CSV download."""
+        if not data or not columns:
+            return no_update
+        df = pd.DataFrame(data)
+        return dcc.send_data_frame(df.to_csv, "census_data.csv", index=False)
 
 
 # -- HELPER FUNCTIONS -------------------------
