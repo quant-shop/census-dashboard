@@ -497,6 +497,40 @@ def register_callbacks(app):
 
         return fig
 
+    # --- DATA TABLE -------------------------
+    @app.callback(
+        Output("data-table", "columns"),
+        Output("data-table", "data"),
+        Input("state-data-store", "data"),
+        Input("county-data-store", "data"),
+        Input("current-view-store", "data"),
+        State("variable-dropdown", "value"),
+        prevent_initial_call=True,
+    )
+    def update_data_table(state_json, county_json, view, variables):
+        """Populate the raw data table with readable column names for the active view."""
+        if not variables:
+            return [], []
+
+        df, name_col = _get_active_df(state_json, county_json, view)
+        if df is None:
+            return [], []
+
+        if isinstance(variables, str):
+            variables = [variables]
+        
+        display_cols = [name_col] + [v for v in variables if v in df.columns]
+        display_df = df[display_cols].copy()
+
+        rename_map = {name_col: "Name"}
+        for v in variables:
+            if v in display_df.columns:
+                rename_map[v] = get_variable_label(v)
+        display_df = display_df.rename(columns=rename_map)
+
+        columns = [{"name": c, "id": c} for c in display_df.columns]
+        data = display_df.to_dict("records")
+        return columns, data
 
 
 # -- HELPER FUNCTIONS -------------------------
