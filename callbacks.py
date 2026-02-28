@@ -252,6 +252,17 @@ def register_callbacks(app):
                     return (fig, show_back, c_end_j, c_start_j, "county", clicked_fips, status)
             except (KeyError, IndexError):
                 pass
+
+        # default render based on current view
+        fig = _build_map_for_toggle(
+            state_end_json, state_start_json,
+            county_end_json, county_start_json,
+            map_var, label, year_toggle
+            start_year, end_year,
+            current_view, drilldown_state,
+        )
+        back_style = show_back if current_view == "county" else hide_back
+        return (fig, back_style, *no_county, no_update, no_update, no_update)
     
     # --- STATS CARDS -------------------------
     @app.callback(
