@@ -303,7 +303,7 @@ def register_callbacks(app):
         return (
             f"{len(series):,}",
             format_value(series.mean(), map_var),
-            format_value(series.std(), map_var),
+            format_value(round(series.std(), 2), map_var),
         )
 
 
