@@ -1,3 +1,4 @@
+from io import StringIO
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -14,7 +15,7 @@ def _store_to_df(data):
     """Convert dcc.Store data (dict or JSON string) into a DataFrame."""
     if isinstance(data, dict):
         return pd.DataFrame(**data)
-    return pd.read_json(data, orient="split")
+    return pd.read_json(StringIO(data), orient="split")
 
 
 def _get_county_geojson():

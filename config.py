@@ -27,7 +27,7 @@ for code, info in CENSUS_VARIABLES.items():
         })
     
     VARIABLE_OPTIONS.append({
-        "label": f"{    info['label']} ({code})",
+        "label": f"{info['label']} ({code})",
         "value": code
     })
 

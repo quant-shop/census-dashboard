@@ -17,7 +17,7 @@ def fetch_all_states(api_key, variables, year):
     """Fetch data for all states for the specified variables and year."""
     c = Census(api_key)
     fields = ["NAME"] + variables
-    data = c.acs5.get(fields, {"for": "state:*"})
+    data = c.acs5.get(fields, {"for": "state:*"}, year=year)
     df = pd.DataFrame(data)
     df['state'] = df['state'].astype(str).str.zfill(2)
     df['state_abbrev'] = df['state'].map(FIPS_TO_ABBREV)
@@ -32,7 +32,7 @@ def fetch_counties(api_key, variables, year, state_fips):
     """Fetch data for all counties in a state for the specified variables and year."""
     c = Census(api_key)
     fields = ["NAME"] + variables
-    data = c.acs5.get(fields, {"for": "county:*", "in": f"state:{state_fips}"})
+    data = c.acs5.get(fields, {"for": "county:*", "in": f"state:{state_fips}"}, year=year)
     df = pd.DataFrame(data)
     df['state'] = df['state'].astype(str).str.zfill(2)
     df['county'] = df['county'].astype(str).str.zfill(3)
