@@ -1,4 +1,3 @@
-
 import time
 import pandas as pd
 import plotly.express as px
@@ -431,6 +430,71 @@ def register_callbacks(app):
             legend=dict(orientation="h", yanchor="top", y=1.0, x=0.5, xanchor="center"),
             height=380,
         )
+        return fig
+
+    # --- CHANGE LEADERS PIE CHART -------------------------
+    @app.callback(
+        Output("pie-chart", "figure"),
+        Input("state-data-store", "data"),
+        Input("state-data-start-store", "data"),
+        Input("county-data-store", "data"),
+        Input("county-data-start-store", "data"),
+        Input("current-view-store", "data"),
+        Input("map-variable-dropdown", "value"),
+        State("year-range-slider", "value"),
+        prevent_initial_call=True,
+    )
+    def update_change_leaders(
+        state_end_json, state_start_json,
+        county_end_json, county_start_json,
+        view, map_var, year_range,
+    ):
+        """Render a bar chart of top gainers and decliners by percent change."""
+        if not map_var:
+            return _empty_chart()
+
+        start_year, end_year = year_range
+        df_end, name_col = _get_active_df(state_end_json, county_end_json, view)
+        df_start, _ = _get_active_df(state_start_json, county_start_json, view)
+
+        if df_end is None or df_start is None or map_var not in df_end.columns:
+            return _empty_chart("Fetch data for both years first.")
+
+        label = get_variable_label(map_var)
+        merged = df_end[[name_col, map_var]].merge(
+            df_start[[name_col, map_var]], on=name_col, suffixes=("_end", "_start"),
+        )
+        end_col = f"{map_var}_end"
+        start_col = f"{map_var}_start"
+        merged["pct_change"] = (
+            (merged[end_col] - merged[start_col]) / merged[start_col].replace(0, float("nan"))
+        ) * 100
+        merged = merged.dropna(subset=["pct_change"])
+
+        top_gainers = merged.nlargest(5, "pct_change")
+        top_decliners = merged.nsmallest(5, "pct_change")
+        combined = pd.concat([top_decliners, top_gainers]).drop_duplicates()
+        combined = combined.sort_values(by="pct_change", ascending=True)
+
+        colors = [
+            "#e74c3c" if val < 0 else "#2ecc71" for val in combined["pct_change"]
+        ]
+
+        fig = go.Figure(go.Bar(
+            x=combined["pct_change"], y=combined[name_col],
+            orientation="h",
+            marker_color=colors,
+            hovertemplate=("<b>%{y}</b><br>% Change: %{x:.1f}%<extra></extra>"),
+        ))
+        fig.update_layout(
+            margin=dict(l=10, r=10, t=10, b=10),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis_title=f"% Change in {label} ({start_year}-{end_year})",
+            yaxis=dict(automargin=True),
+            height=380,
+        )
+
         return fig
 
 
