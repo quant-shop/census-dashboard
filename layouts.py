@@ -263,7 +263,7 @@ def build_data_table():
                 columns=[],
                 data=[],
                 page_size=15,
-                sort_actions="native",
+                sort_action="native",
                 filter_action="native",
                 style_table={"overflowX": "auto"},
                 style_header={
