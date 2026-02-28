@@ -1,4 +1,3 @@
-import time
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -9,6 +8,13 @@ from census_client import *
 from config import *
 
 _county_geojson_cache: dict | None = None
+
+
+def _store_to_df(data):
+    """Convert dcc.Store data (dict or JSON string) into a DataFrame."""
+    if isinstance(data, dict):
+        return pd.DataFrame(**data)
+    return pd.read_json(data, orient="split")
 
 
 def _get_county_geojson():
@@ -282,9 +288,9 @@ def register_callbacks(app):
 
         df = None
         if view == "county" and county_json:
-            df = pd.read_json(county_json, orient="split")
+            df = _store_to_df(county_json)
         elif state_json:
-            df = pd.read_json(state_json, orient="split")
+            df = _store_to_df(state_json)
 
         if df is None or map_var not in df.columns:
             return "--", "--", "--"
@@ -548,11 +554,11 @@ def register_callbacks(app):
 def _get_active_df(state_json, county_json, view):
     """Return the active DataFrame and its name column based on current view."""
     if view == "county" and county_json:
-        df = pd.read_json(county_json, orient="split")
+        df = _store_to_df(county_json)
         name_col = "county_name" if "county_name" in df.columns else "NAME"
         return df, name_col
     elif state_json:
-        df = pd.read_json(state_json, orient="split")
+        df = _store_to_df(state_json)
         name_col = "state_name" if "state_name" in df.columns else "NAME"
         return df, name_col
     return None, None
@@ -567,11 +573,11 @@ def _build_map_for_toggle(
 
     if year_toggle == "change":
         if is_county:
-            df_end = pd.read_json(county_end_json, orient="split")
-            df_start = pd.read_json(county_start_json, orient="split") if county_start_json else None
+            df_end = _store_to_df(county_end_json)
+            df_start = _store_to_df(county_start_json) if county_start_json else None
         else:
-            df_end = pd.read_json(state_end_json, orient="split")
-            df_start = pd.read_json(state_start_json, orient="split") if state_start_json else None
+            df_end = _store_to_df(state_end_json)
+            df_start = _store_to_df(state_start_json) if state_start_json else None
         
         if df_start is None:
             return _empty_map("Start-year data not available.")
@@ -591,7 +597,7 @@ def _build_map_for_toggle(
     if not chosen_json:
         return _empty_map("No data for selected year.")
 
-    df = pd.read_json(chosen_json, orient="split")
+    df = _store_to_df(chosen_json)
 
     if is_county:
         return _build_county_choropleth(df, map_var, label + suffix, drilldown_state)
