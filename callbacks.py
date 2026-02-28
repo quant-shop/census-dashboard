@@ -1,3 +1,4 @@
+
 import time
 import pandas as pd
 import plotly.express as px
@@ -373,7 +374,64 @@ def register_callbacks(app):
         )
 
         return fig
-        
+
+    # --- YEAR_OVER_YEAR COMPARSISON CHART -------------------------
+    @app.callback(
+        Output("scatter-chart", "figure"),
+        Input("state-data-store", "data"),
+        Input("state-data-start-store", "data"),
+        Input("county-data-store", "data"),
+        Input("county-data-start-store", "data"),
+        Input("current-view-store", "data"),
+        Input("map-variable-dropdown", "value"),
+        State("year-range-slider", "value"),
+        prevent_initial_call=True,
+    )
+    def update_yoy_comparison(
+        state_end_json, state_start_json,
+        county_end_json, county_start_json,
+        view, map_var, year_range,
+    ):
+        """Render a grouped bar chart comparing top regions across start and end years."""
+        if not map_var:
+            return _empty_chart()
+
+        start_year, end_year = year_range
+        df_end, name_col = _get_active_df(state_end_json, county_end_json, view)
+        df_start, _ = _get_active_df(state_start_json, county_start_json, view)
+
+        if df_end is None or df_start is None or map_var not in df_end.columns:
+            return _empty_chart("Fetch data for both years first.")
+
+        label = get_variable_label(map_var)
+        top = df_end.dropna(subset=[map_var]).nlargest(12, map_var)
+        names = top[name_col].tolist()
+
+        start_vals = df_start.set_index(name_col).reindex(names)[map_var].tolist()
+        end_vals = top.set_index(name_col).reindex(names)[map_var].tolist()
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            name=str(start_year), x=names, y=start_vals,
+            marker_color="#3498db",
+            hovertemplate=f"<b>%{{x}}</b><br>{start_year}: %{{y:,.0f}}<extra></extra>",
+        ))
+        fig.add_trace(go.Bar(
+            name=str(end_year), x=names, y=end_vals,
+            marker_color="#e74c3c",
+            hovertemplate=f"<b>%{{x}}</b><br>{end_year}: %{{y:,.0f}}<extra></extra>",
+        ))
+        fig.update_layout(
+            barmode="group",
+            margin=dict(l=10, r=10, t=10, b=10),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            yaxis_title=label,
+            xaxis=dict(tickangle=-40, automargin=True),
+            legend=dict(orientation="h", yanchor="top", y=1.0, x=0.5, xanchor="center"),
+            height=380,
+        )
+        return fig
 
 
 
