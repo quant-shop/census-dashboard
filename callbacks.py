@@ -1,5 +1,6 @@
 from io import StringIO
 import re
+import traceback
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -21,12 +22,20 @@ def _store_to_df(data):
 
 def _get_county_geojson():
     """Fetch and cache the county-level GeoJSON used for choropleth maps."""
-
     global _county_geojson_cache
-    if _county_geojson_cache is None:
-        resp = requests.get(COUNTY_GEOJSON_URL, timeout=30)
-        _county_geojson_cache = resp.json()
-    return _county_geojson_cache
+    if _county_geojson_cache is not None:
+        return _county_geojson_cache
+
+    for attempt in range(3):
+        try:
+            resp = requests.get(COUNTY_GEOJSON_URL, timeout=60)
+            resp.raise_for_status()
+            _county_geojson_cache = resp.json()
+            print(f"[INFO] County GeoJSON loaded ({len(_county_geojson_cache['features'])} features)")
+            return _county_geojson_cache
+        except Exception as e:
+            print(f"[WARN] GeoJSON download attempt {attempt + 1}/3 failed: {e}")
+    raise RuntimeError("Failed to download county GeoJSON after 3 attempts")
 
 
 def _empty_map(message="Select variable and click 'Fetch Data'"):
@@ -307,17 +316,26 @@ def register_callbacks(app):
                     status = f"Showing {len(county_end_df)} counties in {state_name}."
 
                     return (fig, show_back, c_end_j, c_start_j, "county", clicked_fips, status)
-            except (KeyError, IndexError):
-                pass
+            except Exception as e:
+                traceback.print_exc()
+                return (
+                    _empty_map(f"Error loading county map: {e}"),
+                    hide_back, *no_county,
+                    "states", None, f"Drill-down failed: {e}",
+                )
 
         # default render based on current view
-        fig = _build_map_for_toggle(
-            state_end_json, state_start_json,
-            county_end_json, county_start_json,
-            map_var, label, year_toggle,
-            start_year, end_year,
-            current_view, drilldown_state,
-        )
+        try:
+            fig = _build_map_for_toggle(
+                state_end_json, state_start_json,
+                county_end_json, county_start_json,
+                map_var, label, year_toggle,
+                start_year, end_year,
+                current_view, drilldown_state,
+            )
+        except Exception as e:
+            traceback.print_exc()
+            fig = _empty_map(f"Error rendering map: {e}")
         back_style = show_back if current_view == "county" else hide_back
         return (fig, back_style, *no_county, no_update, no_update, no_update)
     
@@ -615,6 +633,12 @@ def register_callbacks(app):
         df = pd.DataFrame(data)
         return dcc.send_data_frame(df.to_csv, "census_data.csv", index=False)
 
+    # Pre-cache the county GeoJSON so the first county map renders instantly
+    try:
+        _get_county_geojson()
+    except Exception as e:
+        print(f"[WARN] Could not pre-cache county GeoJSON: {e}")
+
 
 # -- HELPER FUNCTIONS -------------------------
 def _get_active_df(state_json, county_json, view):
@@ -708,8 +732,17 @@ def _build_change_choropleth(df_end, df_start, var_code, label, is_county, state
             color_continuous_scale="RdYlGn",
             color_continuous_midpoint=0,
             labels={"pct_change": label},
+            scope="usa",
         )
-        fig.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
+        fig.update_geos(
+            fitbounds="locations",
+            visible=True,
+            showframe=False,
+            showcoastlines=False,
+            showland=True,
+            landcolor="#f0f0f0",
+            bgcolor="rgba(0,0,0,0)",
+        )
     else:
         fig = px.choropleth(
             merged,
@@ -793,11 +826,16 @@ def _build_county_choropleth(df, var_code, label, state_fips):
         hover_name="county_name",
         hover_data={var_code: ":,.0f", "fips": False},
         color_continuous_scale="Plasma",
+        scope="usa",
     )
 
     fig.update_geos(
         fitbounds="locations",
-        visible=False,
+        visible=True,
+        showframe=False,
+        showcoastlines=False,
+        showland=True,
+        landcolor="#f0f0f0",
         bgcolor="rgba(0,0,0,0)",
     )
 
