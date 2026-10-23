@@ -1,11 +1,9 @@
-name: Deploy Census Atlas
+name: Deploy GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: '17 */6 * * *'
 
 permissions:
   contents: read
@@ -23,22 +21,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out Census Atlas source
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          repository: quant-shop/census
-          ref: main
-          path: census
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: census/apps/census-atlas/package-lock.json
 
-      - name: Build and test
-        working-directory: census/apps/census-atlas
+      - name: Build and verify site
         run: npm ci && npm run check
 
       - name: Configure Pages
@@ -49,7 +41,7 @@ jobs:
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: census/apps/census-atlas/dist
+          path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment
