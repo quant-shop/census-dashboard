@@ -26,6 +26,7 @@ unavailable or requires a key.
 ## Run locally
 
 ```bash
+npm ci
 npm start
 ```
 

@@ -5,3 +5,8 @@ coverage/
 .env
 .env.*
 !.env.example
+/dist/counties-10m.json
+/dist/map-geometry.mjs
+/dist/quant_workshop_logo6.png
+/dist/fonts/
+/dist/licenses/
