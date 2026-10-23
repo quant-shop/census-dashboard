@@ -1,9 +1,9 @@
-name: CI
+name: Verify Census Atlas
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
 
 permissions:
   contents: read
@@ -11,12 +11,21 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out Census Atlas source
+        uses: actions/checkout@v4
+        with:
+          repository: quant-shop/census
+          ref: main
+          path: census
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run check
+          cache-dependency-path: census/apps/census-atlas/package-lock.json
+
+      - name: Build and test
+        working-directory: census/apps/census-atlas
+        run: npm ci && npm run check
