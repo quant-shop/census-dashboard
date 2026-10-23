@@ -16,7 +16,7 @@ await stripPngMetadata("quant_workshop_logo6.png", "dist/quant_workshop_logo6.pn
 
 await mkdir("dist/fonts", { recursive: true });
 await mkdir("dist/licenses", { recursive: true });
-for (const name of ["d3-geo", "topojson-client", "us-atlas"]) {
+for (const name of ["d3-array", "d3-geo", "topojson-client", "us-atlas"]) {
   await copyFile(`node_modules/${name}/LICENSE`, `dist/licenses/${name}.txt`);
 }
 for (const [family, files] of Object.entries({
